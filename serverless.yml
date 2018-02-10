@@ -6,12 +6,13 @@ provider:
   stage: ${opt:stage}
   region: ap-southeast-1
   memorySize: 128
+  timeout: 180
   environment:
-    HOOK_SECRET: ${opt:secret}
-    API_KEY: ${opt.apikey}
-    API_SECRET: ${opt.apisecret}
-    ACCESS_TOKEN: ${opt.accesstoken}
-    ACCESS_SECRET: ${opt.accesssecret}
+    HOOK_SECRET: ${self:custom.secret}
+    API_KEY: ${self:custom.apikey}
+    API_SECRET: ${self:custom.apisecret}
+    ACCESS_TOKEN: ${self:custom.accesstoken}
+    ACCESS_SECRET: ${self:custom.accesssecret}
   iamRoleStatements:
     - Effect: "Allow"
       Action:
@@ -26,6 +27,8 @@ provider:
       Resource:
         - "*"
 
+custom: ${file(serverless.env.yml)}
+
 package:
  exclude:
    - ./**
@@ -37,6 +40,6 @@ functions:
     handler: bin/blogposter
     events:
       - http:
-        path: status
-        method: post
-        cors: true
+          path: status
+          method: post
+          cors: true

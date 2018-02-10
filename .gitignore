@@ -3,3 +3,6 @@
 
 # golang output binary directory
 bin
+
+# Serverless env file
+serverless.env.yml
