@@ -7,7 +7,11 @@ provider:
   region: ap-southeast-1
   memorySize: 128
   environment:
-    SECRET: ${opt:secret}
+    HOOK_SECRET: ${opt:secret}
+    API_KEY: ${opt.apikey}
+    API_SECRET: ${opt.apisecret}
+    ACCESS_TOKEN: ${opt.accesstoken}
+    ACCESS_SECRET: ${opt.accesssecret}
   iamRoleStatements:
     - Effect: "Allow"
       Action:
