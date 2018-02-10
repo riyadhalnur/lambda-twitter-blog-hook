@@ -1,0 +1,38 @@
+service: lambda-twitter-blog-hook
+
+provider:
+  name: aws
+  runtime: go1.x
+  stage: ${opt:stage}
+  region: ap-southeast-1
+  memorySize: 128
+  environment:
+    SECRET: ${opt:secret}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "logs:CreateLogGroup"
+        - "logs:CreateLogStream"
+        - "logs:PutLogEvents"
+      Resource:
+        - "arn:aws:logs:*:*:*"
+    - Effect: "Allow"
+      Action:
+        - "cloudwatch:*"
+      Resource:
+        - "*"
+
+package:
+ exclude:
+   - ./**
+ include:
+   - ./bin/**
+
+functions:
+  blogposter:
+    handler: bin/blogposter
+    events:
+      - http:
+        path: status
+        method: post
+        cors: true
