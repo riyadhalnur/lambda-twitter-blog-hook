@@ -2,7 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/ChimeraCoder/anaconda"
@@ -82,6 +84,8 @@ var (
 	consumerSecret = os.Getenv("API_SECRET")
 	accessToken    = os.Getenv("ACCESS_TOKEN")
 	accessSecret   = os.Getenv("ACCESS_SECRET")
+	baseLink       = os.Getenv("BASE_URL")
+	comTitle       = "[NEW POST]"
 )
 
 // Handler - handles the Lambda event
@@ -95,11 +99,33 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		return events.APIGatewayProxyResponse{Body: string(errBody), StatusCode: 403}, nil
 	}
 
+	var bodyObj pushEvent
+	if err := json.Unmarshal([]byte(request.Body), &bodyObj); err != nil {
+		return events.APIGatewayProxyResponse{Body: "internal server error", StatusCode: 500}, err
+	}
+
 	anaconda.SetConsumerKey(consumerKey)
 	anaconda.SetConsumerSecret(consumerSecret)
 	api := anaconda.NewTwitterApi(accessToken, accessSecret)
 
-	return events.APIGatewayProxyResponse{Body: request.Body, StatusCode: 200}, nil
+	commitMessage := strings.Split(bodyObj.Commits[0].Message, "\n")
+	commitTitle, postName, postLink := commitMessage[0], commitMessage[1], commitMessage[2]
+	if commitTitle != comTitle {
+		return events.APIGatewayProxyResponse{Body: "not a new post. skipping", StatusCode: 200}, nil
+	}
+
+	newTweet := fmt.Sprintf("New post - %s %s%s", postName, baseLink, postLink)
+	tweet, err := api.PostTweet(newTweet, nil)
+	if err != nil {
+		return events.APIGatewayProxyResponse{Body: "failed to post tweet", StatusCode: 500}, err
+	}
+
+	successBody, err := json.Marshal(&successResponse{Message: "Posted to Twitter successfully", Details: tweet.Text})
+	if err != nil {
+		return events.APIGatewayProxyResponse{Body: "internal server error", StatusCode: 500}, err
+	}
+
+	return events.APIGatewayProxyResponse{Body: string(successBody), StatusCode: 200}, nil
 }
 
 func main() {
