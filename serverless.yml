@@ -13,6 +13,7 @@ provider:
     API_SECRET: ${self:custom.apisecret}
     ACCESS_TOKEN: ${self:custom.accesstoken}
     ACCESS_SECRET: ${self:custom.accesssecret}
+    BASE_URL: ${self:custom.baseurl}
   iamRoleStatements:
     - Effect: "Allow"
       Action:
