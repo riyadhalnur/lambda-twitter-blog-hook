@@ -109,6 +109,10 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	api := anaconda.NewTwitterApi(accessToken, accessSecret)
 
 	commitMessage := strings.Split(bodyObj.Commits[0].Message, "\n")
+	if len(commitMessage) < 3 {
+		return events.APIGatewayProxyResponse{Body: "does not seem like a new post. skipping", StatusCode: 200}, nil
+	}
+
 	commitTitle, postName, postLink := commitMessage[0], commitMessage[1], commitMessage[2]
 	if commitTitle != comTitle {
 		return events.APIGatewayProxyResponse{Body: "not a new post. skipping", StatusCode: 200}, nil
