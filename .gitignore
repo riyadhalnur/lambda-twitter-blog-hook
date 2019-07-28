@@ -20,3 +20,5 @@ bin
 # Enviroment files
 env.yml
 .envrc
+
+node_modules
