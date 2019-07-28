@@ -11,21 +11,21 @@ Lambda Twitter Blog Poster
 - [Go](https://golang.org/)  
 
 #### Getting started  
-1. Create a `serverless.env.yml` file in the root of the project.  
+1. Create a `env.yml` file in the root of the project.  
 2. Declare the following variables and values in the file -  
 ```yaml
-secret: "<gitlab-token-header-secret>"
-apikey: "<twitter-consumer-api-key>"
-apisecret: "<twitter-consumer-secret-key>"
-accesstoken: "<twitter-app-access-token>"
-accesssecret: "<twitter-app-access-secret>"
-baseurl: "<url-of-blog>"
+secrets:
+  HOOK_SECRET: *<gitlab-token-header-secret>*
+  API_KEY: *<twitter-consumer-api-key>*
+  API_SECRET: *<twitter-consumer-secret-key>*
+  ACCESS_TOKEN: *<twitter-app-access-token>*
+  ACCESS_SECRET: *<twitter-app-access-secret>*
+  BASE_URL: *<url-of-blog>*
 ```  
 
 ### Deploy  
-1. Build the program using `make build` in the root of the project.  
-2. To deploy, use `sls deploy -s <env-name>`.
-3. Once deployed, copy the API Gateway URL printed on the console.  
+1. To deploy, use `sls deploy -v` **OR** `make deploy`.  
+2. Once deployed, copy the API Gateway URL printed on the console.  
 
 ### Create a webhook  
 *Only GitLab is supported at the moment*  

@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -12,16 +13,18 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
-type errorResponse struct {
-	Reason string `json:"reason"`
-}
+var (
+	hookSecret     = os.Getenv("HOOK_SECRET")
+	consumerKey    = os.Getenv("API_KEY")
+	consumerSecret = os.Getenv("API_SECRET")
+	accessToken    = os.Getenv("ACCESS_TOKEN")
+	accessSecret   = os.Getenv("ACCESS_SECRET")
+	baseLink       = os.Getenv("BASE_URL")
+	comTitle       = "[NEW POST]"
+)
 
-type successResponse struct {
-	Message string `json:"message"`
-	Details string `json:"details,omitempty"`
-}
-
-type pushEvent struct {
+// GitlabPushEvent struct
+type GitlabPushEvent struct {
 	ObjectKind   string      `json:"object_kind"`
 	EventName    string      `json:"event_name"`
 	Before       string      `json:"before"`
@@ -78,30 +81,24 @@ type pushEvent struct {
 	} `json:"repository"`
 }
 
-var (
-	hookSecret     = os.Getenv("HOOK_SECRET")
-	consumerKey    = os.Getenv("API_KEY")
-	consumerSecret = os.Getenv("API_SECRET")
-	accessToken    = os.Getenv("ACCESS_TOKEN")
-	accessSecret   = os.Getenv("ACCESS_SECRET")
-	baseLink       = os.Getenv("BASE_URL")
-	comTitle       = "[NEW POST]"
-)
-
 // Handler - handles the Lambda event
 func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	// Check if webhook secret header exists and value is equal to defined secret
 	if hookHeader := request.Headers["X-Gitlab-Token"]; hookHeader != hookSecret {
-		errBody, err := json.Marshal(&errorResponse{Reason: "Invalid webhook"})
-		if err != nil {
-			return events.APIGatewayProxyResponse{Body: "internal server error", StatusCode: 500}, err
-		}
-		return events.APIGatewayProxyResponse{Body: string(errBody), StatusCode: 403}, nil
+		return events.APIGatewayProxyResponse{
+			StatusCode: http.StatusInternalServerError,
+			Headers:    getCorsHeaders(),
+			Body:       "invalid webhook secret",
+		}, nil
 	}
 
-	var bodyObj pushEvent
+	var bodyObj GitlabPushEvent
 	if err := json.Unmarshal([]byte(request.Body), &bodyObj); err != nil {
-		return events.APIGatewayProxyResponse{Body: "internal server error", StatusCode: 500}, err
+		return events.APIGatewayProxyResponse{
+			StatusCode: http.StatusBadRequest,
+			Headers:    getCorsHeaders(),
+			Body:       "invalid push event",
+		}, err
 	}
 
 	anaconda.SetConsumerKey(consumerKey)
@@ -110,26 +107,43 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 
 	commitMessage := strings.Split(bodyObj.Commits[0].Message, "\n")
 	if len(commitMessage) < 3 {
-		return events.APIGatewayProxyResponse{Body: "does not seem like a new post. skipping", StatusCode: 200}, nil
+		return events.APIGatewayProxyResponse{
+			StatusCode: http.StatusOK,
+			Headers:    getCorsHeaders(),
+			Body:       "does not seem like a new post. skipping",
+		}, nil
 	}
 
 	commitTitle, postName, postLink := commitMessage[0], commitMessage[1], commitMessage[2]
 	if commitTitle != comTitle {
-		return events.APIGatewayProxyResponse{Body: "not a new post. skipping", StatusCode: 200}, nil
+		return events.APIGatewayProxyResponse{
+			StatusCode: http.StatusOK,
+			Headers:    getCorsHeaders(),
+			Body:       "not a new post. skipping",
+		}, nil
 	}
 
 	newTweet := fmt.Sprintf("New post - %s %s%s", postName, baseLink, postLink)
 	tweet, err := api.PostTweet(newTweet, nil)
 	if err != nil {
-		return events.APIGatewayProxyResponse{Body: "failed to post tweet", StatusCode: 500}, err
+		return events.APIGatewayProxyResponse{
+			StatusCode: http.StatusInternalServerError,
+			Headers:    getCorsHeaders(),
+			Body:       "failed to post tweet",
+		}, err
 	}
 
-	successBody, err := json.Marshal(&successResponse{Message: "Posted to Twitter successfully", Details: tweet.Text})
-	if err != nil {
-		return events.APIGatewayProxyResponse{Body: "internal server error", StatusCode: 500}, err
-	}
+	return events.APIGatewayProxyResponse{
+		StatusCode: http.StatusOK,
+		Headers:    getCorsHeaders(),
+		Body:       tweet.Text,
+	}, nil
+}
 
-	return events.APIGatewayProxyResponse{Body: string(successBody), StatusCode: 200}, nil
+func getCorsHeaders() map[string]string {
+	return map[string]string{
+		"Access-Control-Allow-Origin": "*",
+	}
 }
 
 func main() {

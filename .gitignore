@@ -4,5 +4,19 @@
 # golang output binary directory
 bin
 
-# Serverless env file
-serverless.env.yml
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, build with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Enviroment files
+env.yml
+.envrc

@@ -1,40 +1,36 @@
 service: lambda-twitter-blog-hook
 
+frameworkVersion: '>=1.45.0 <2.0.0'
+
 provider:
   name: aws
   runtime: go1.x
-  stage: ${opt:stage}
-  region: ap-southeast-1
-  memorySize: 128
-  timeout: 180
-  environment:
-    HOOK_SECRET: ${self:custom.secret}
-    API_KEY: ${self:custom.apikey}
-    API_SECRET: ${self:custom.apisecret}
-    ACCESS_TOKEN: ${self:custom.accesstoken}
-    ACCESS_SECRET: ${self:custom.accesssecret}
-    BASE_URL: ${self:custom.baseurl}
-  iamRoleStatements:
-    - Effect: "Allow"
-      Action:
-        - "logs:CreateLogGroup"
-        - "logs:CreateLogStream"
-        - "logs:PutLogEvents"
-      Resource:
-        - "arn:aws:logs:*:*:*"
-    - Effect: "Allow"
-      Action:
-        - "cloudwatch:*"
-      Resource:
-        - "*"
 
-custom: ${file(serverless.env.yml)}
+  stage: ${opt:stage, 'development'}
+  region: ${opt:region, 'ap-southeast-1'}
+
+  environment:
+    HOOK_SECRET: ${file(env.yml):secrets.HOOK_SECRET}
+    API_KEY: ${file(env.yml):secrets.API_KEY}
+    API_SECRET: ${file(env.yml):secrets.API_SECRET}
+    ACCESS_TOKEN: ${file(env.yml):secrets.ACCESS_TOKEN}
+    ACCESS_SECRET: ${file(env.yml):secrets.ACCESS_SECRET}
+    BASE_URL: ${file(env.yml):secrets.BASE_URL}
+
+plugins:
+  - serverless-plugin-scripts
+
+custom:
+  scripts:
+    hooks:
+      'package:initialize': make
+      'deploy:finalize': make clean
 
 package:
- exclude:
-   - ./**
- include:
-   - ./bin/**
+  exclude:
+    - ./**
+  include:
+    - ./bin/**
 
 functions:
   blogposter:
