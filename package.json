@@ -1,6 +1,6 @@
 {
   "name": "lambda-twitter-blog-hook",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Automagically post to Twitter timeline about new blog post using Go on AWS Lambda.",
   "repository": {
     "type": "git",

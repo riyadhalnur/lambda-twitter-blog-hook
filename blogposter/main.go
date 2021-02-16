@@ -22,13 +22,12 @@ var (
 	comTitle       = "[NEW POST]"
 )
 
-// Handler - handles the Lambda event
+// Handler handles the incoming event from API Gateway
 func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	// Check if webhook secret header exists and value is equal to defined secret
-	if hookHeader := request.Headers["X-Gitlab-Token"]; hookHeader != hookSecret {
+	if hookHeader := request.Headers["x-gitlab-token"]; hookHeader != hookSecret {
 		return events.APIGatewayProxyResponse{
-			StatusCode: http.StatusInternalServerError,
-			Headers:    getCorsHeaders(),
+			StatusCode: http.StatusUnauthorized,
 			Body:       "invalid webhook secret",
 		}, nil
 	}
@@ -37,7 +36,6 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	if err := json.Unmarshal([]byte(request.Body), &bodyObj); err != nil {
 		return events.APIGatewayProxyResponse{
 			StatusCode: http.StatusBadRequest,
-			Headers:    getCorsHeaders(),
 			Body:       "invalid push event",
 		}, err
 	}
@@ -50,7 +48,6 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	if len(commitMessage) < 3 {
 		return events.APIGatewayProxyResponse{
 			StatusCode: http.StatusOK,
-			Headers:    getCorsHeaders(),
 			Body:       "does not seem like a new post. skipping",
 		}, nil
 	}
@@ -59,7 +56,6 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	if commitTitle != comTitle {
 		return events.APIGatewayProxyResponse{
 			StatusCode: http.StatusOK,
-			Headers:    getCorsHeaders(),
 			Body:       "not a new post. skipping",
 		}, nil
 	}
@@ -69,22 +65,14 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	if err != nil {
 		return events.APIGatewayProxyResponse{
 			StatusCode: http.StatusInternalServerError,
-			Headers:    getCorsHeaders(),
 			Body:       "failed to post tweet",
 		}, err
 	}
 
 	return events.APIGatewayProxyResponse{
 		StatusCode: http.StatusOK,
-		Headers:    getCorsHeaders(),
 		Body:       tweet.Text,
 	}, nil
-}
-
-func getCorsHeaders() map[string]string {
-	return map[string]string{
-		"Access-Control-Allow-Origin": "*",
-	}
 }
 
 func main() {

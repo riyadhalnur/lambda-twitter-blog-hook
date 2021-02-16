@@ -1,10 +1,13 @@
 service: lambda-twitter-blog-hook
 
-frameworkVersion: '>=1.45.0 <2.0.0'
+frameworkVersion: "2"
 
 provider:
   name: aws
   runtime: go1.x
+  lambdaHashingVersion: 20201221
+  httpApi:
+    cors: true
 
   stage: ${opt:stage, 'development'}
   region: ${opt:region, 'ap-southeast-1'}
@@ -35,8 +38,9 @@ package:
 functions:
   blogposter:
     handler: bin/blogposter
+    memorySize: 128
+    timeout: 10
     events:
-      - http:
-          path: status
+      - httpApi:
+          path: /status
           method: post
-          cors: true
